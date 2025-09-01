@@ -1,80 +1,115 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Header from "./Header";
+import Login from "./Login";
+import Register from "./Register";
 
 function App() {
   const API_URL = "https://webtest-jdej.onrender.com"; // 🔴 Thay bằng URL Render backend của bạn
 
-  const [users, setUsers] = useState([]);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  // State để điều khiển hiển thị Login và Register form
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [user, setUser] = useState(null);
 
-  // Lấy danh sách users khi load trang
-  useEffect(() => {
-    fetch(`${API_URL}/users`)
-      .then(res => res.json())
-      .then(data => setUsers(data))
-      .catch(err => console.error("Fetch error:", err));
-  }, []);
-
-  // Hàm thêm user mới
-  const handleAddUser = async (e) => {
-    e.preventDefault();
-
-    const newUser = { name, email };
-
+  // Hàm xử lý đăng nhập: trả về { success: boolean, message?: string }
+  const handleLogin = async (username, password) => {
     try {
-      const res = await fetch(`${API_URL}/users`, {
+      const res = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
+        body: JSON.stringify({ username, password }),
       });
 
-      if (!res.ok) throw new Error("Failed to add user");
+      console.log("Response status:", res.status);
 
-      const added = await res.json();
-      setUsers([...users, added]); // cập nhật state
-      setName("");
-      setEmail("");
+      if (!res.ok) {
+        console.warn("Login failed: HTTP error");
+        return { success: false, message: "Sai email hoặc mật khẩu!" };
+      }
+
+      const result = await res.json();
+      console.log("Response JSON:", result);
+
+      if (typeof result.success === "boolean") {
+        if (result.success) setUser({ username });
+        return result.success
+          ? { success: true }
+          : { success: false, message: "Sai email hoặc mật khẩu!" };
+      }
+
+      if (typeof result === "boolean") {
+        if (result) setUser({ username });
+        return result
+          ? { success: true }
+          : { success: false, message: "Sai email hoặc mật khẩu!" };
+      }
+
+      console.warn("Login fallback triggered");
+      return { success: false, message: "Đăng nhập thất bại!" };
     } catch (error) {
-      console.error(error);
+      console.error("Login error:", error);
+      return { success: false, message: "Có lỗi xảy ra khi đăng nhập." };
     }
   };
 
+  // Hàm xử lý đăng ký: trả về { success: boolean, message?: string }
+  const handleRegister = async (username, email, password) => {
+    try {
+      const res = await fetch(`${API_URL}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
+      });
+      if (!res.ok) {
+        return { success: false, message: "Đăng ký thất bại!" };
+      }
+      const result = await res.json();
+      if (result && result.id) {
+        return { success: true };
+      }
+      return { success: false, message: "Đăng ký thất bại!" };
+    } catch (error) {
+      return { success: false, message: "Có lỗi xảy ra khi đăng ký." };
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
   return (
-    <div style={{ padding: "20px", fontFamily: "sans-serif" }}>
-      <h1>Quản lý Users</h1>
+    <div style={{ padding: "0px", fontFamily: "sans-serif" }}>
+      <Header
+        onLoginClick={() => setShowLogin(true)}
+        onRegisterClick={() => setShowRegister(true)}
+        user={user}
+        onLogout={handleLogout}
+      />
 
-      {/* Form thêm user */}
-      <form onSubmit={handleAddUser} style={{ marginBottom: "20px" }}>
-        <input
-          type="text"
-          placeholder="Tên"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "5px" }}
+      {/* Hiển thị form đăng nhập nếu showLogin = true */}
+      {showLogin && (
+        <Login
+          onClose={() => setShowLogin(false)}
+          onLogin={async (username, password) => {
+            const result = await handleLogin(username, password);
+            if (result.success) setShowLogin(false);
+            return result;
+          }}
         />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "5px" }}
-        />
-        <button type="submit" style={{ padding: "5px 10px" }}>
-          Thêm User
-        </button>
-      </form>
+      )}
 
-      {/* Danh sách user */}
-      <h2>Danh sách Users</h2>
-      <ul>
-        {users.map((u) => (
-          <li key={u.id}>
-            {u.name} - {u.email}
-          </li>
-        ))}
-      </ul>
+      {/* Hiển thị form đăng ký nếu showRegister = true */}
+      {showRegister && (
+        <Register
+          onClose={() => setShowRegister(false)}
+          onRegister={handleRegister}
+          onAutoLogin={async (username, password) => {
+            const result = await handleLogin(username, password);
+            if (result.success) setShowRegister(false);
+            return result;
+          }}
+        />
+      )}
     </div>
   );
 }
