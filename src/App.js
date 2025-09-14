@@ -2,16 +2,14 @@ import { useState } from "react";
 import Header from "./Header";
 import Login from "./Login";
 import Register from "./Register";
-
+import FamilyTree from "./FamilyTree";
 function App() {
   const API_URL = "https://webtest-jdej.onrender.com"; // 🔴 Thay bằng URL Render backend của bạn
 
-  // State để điều khiển hiển thị Login và Register form
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [user, setUser] = useState(null);
 
-  // Hàm xử lý đăng nhập: trả về { success: boolean, message?: string }
   const handleLogin = async (username, password) => {
     try {
       const res = await fetch(`${API_URL}/login`, {
@@ -24,35 +22,26 @@ function App() {
 
       if (!res.ok) {
         console.warn("Login failed: HTTP error");
-        return { success: false, message: "Sai email hoặc mật khẩu!" };
+        return { success: false, message: "Sai tên đăng nhập hoặc mật khẩu!" };
       }
 
       const result = await res.json();
       console.log("Response JSON:", result);
 
-      if (typeof result.success === "boolean") {
-        if (result.success) setUser({ username });
-        return result.success
-          ? { success: true }
-          : { success: false, message: "Sai email hoặc mật khẩu!" };
+      if (result.success && result.id && result.username) {
+        setUser({ id: result.id, username: result.username });
+        return { success: true };
       }
-
-      if (typeof result === "boolean") {
-        if (result) setUser({ username });
-        return result
-          ? { success: true }
-          : { success: false, message: "Sai email hoặc mật khẩu!" };
-      }
-
-      console.warn("Login fallback triggered");
-      return { success: false, message: "Đăng nhập thất bại!" };
+      return {
+        success: false,
+        message: result.message || "Sai tên đăng nhập hoặc mật khẩu!",
+      };
     } catch (error) {
       console.error("Login error:", error);
       return { success: false, message: "Có lỗi xảy ra khi đăng nhập." };
     }
   };
 
-  // Hàm xử lý đăng ký: trả về { success: boolean, message?: string }
   const handleRegister = async (username, email, password) => {
     try {
       const res = await fetch(`${API_URL}/register`, {
@@ -64,10 +53,10 @@ function App() {
         return { success: false, message: "Đăng ký thất bại!" };
       }
       const result = await res.json();
-      if (result && result.id) {
-        return { success: true };
+      if (result && result.success && result.id) {
+        return { success: true, id: result.id };
       }
-      return { success: false, message: "Đăng ký thất bại!" };
+      return { success: false, message: result.message || "Đăng ký thất bại!" };
     } catch (error) {
       return { success: false, message: "Có lỗi xảy ra khi đăng ký." };
     }
@@ -76,6 +65,7 @@ function App() {
   const handleLogout = () => {
     setUser(null);
   };
+
 
   return (
     <div style={{ padding: "0px", fontFamily: "sans-serif" }}>
@@ -110,6 +100,10 @@ function App() {
           }}
         />
       )}
+
+      {/* Hiển thị thông tin thành viên sau khi đăng nhập */}
+
+      {user && <FamilyTree user_id={user.id} />}
     </div>
   );
 }
