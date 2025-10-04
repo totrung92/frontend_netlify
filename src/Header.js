@@ -3,12 +3,16 @@ import React from "react";
 function Header({ onLoginClick, onRegisterClick, user, onLogout }) {
   return (
     <header style={{
+      position: "sticky", // Giữ header cố định khi cuộn
+      top: 0,
+      zIndex: 100,
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
       padding: "16px 24px",
       background: "#19d282ff",
-      color: "#fff"
+      color: "#fff",
+      boxShadow: "0 2px 8px #0002"
     }}>
       <h2 style={{ margin: 0 }}>My Website</h2>
       <div>
