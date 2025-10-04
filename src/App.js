@@ -2,7 +2,7 @@ import { useState } from "react";
 import Header from "./Header";
 import Login from "./Login";
 import Register from "./Register";
-import FamilyTree from "./FamilyTree";
+import FamilyTree from "./FamilyTree/FamilyTree";
 function App() {
   const API_URL = "https://webtest-jdej.onrender.com"; // 🔴 Thay bằng URL Render backend của bạn
 
